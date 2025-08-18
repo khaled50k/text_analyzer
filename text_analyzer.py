@@ -53,15 +53,8 @@ class TextAnalyzer:
         # Clean and filter sentences intelligently
         cleaned_sentences = []
         for sentence in sentences:
-            sentence = sentence.strip()
-            # Dynamic filtering based on sentence quality, not hardcoded patterns
-            if (len(sentence.split()) >= 6 and 
-                len(sentence.split()) <= 50 and
-                sentence.endswith(('.') or sentence.endswith('!') or sentence.endswith('?')) and
-                not sentence.isupper() and
-                # Skip obvious non-content elements dynamically
-                not any(sentence.startswith(prefix) for prefix in ['✅', '🔹', '🚀', '📚', '🎯', '🔍', '💡', '📝', '📊', '😊', '🎭', '🏷️', '☁️'])):
-                cleaned_sentences.append(sentence)
+            if self._is_quality_sentence(sentence):
+                cleaned_sentences.append(sentence.strip())
         
         if len(cleaned_sentences) <= num_sentences:
             return ' '.join(cleaned_sentences)
@@ -92,7 +85,8 @@ class TextAnalyzer:
     
     def _preprocess_text(self, text):
         """
-        Preprocesses text to handle formatting issues, newlines, and malformed content.
+        Preprocesses text to handle formatting issues dynamically without hardcoded assumptions.
+        This method adapts to any content type by using general text cleaning principles.
         """
         # Replace multiple newlines with single spaces
         text = re.sub(r'\n+', ' ', text)
@@ -100,41 +94,77 @@ class TextAnalyzer:
         # Replace multiple spaces with single spaces
         text = re.sub(r'\s+', ' ', text)
         
-        # Fix common formatting issues
-        text = re.sub(r'([.!?])\s*([A-Z])', r'\1 \2', text)  # Fix spacing after punctuation
-        text = re.sub(r'([a-z])\s*([A-Z])', r'\1. \2', text)  # Add periods between sentence fragments
+        # Fix common spacing issues around punctuation
+        text = re.sub(r'([.!?])\s*([A-Z])', r'\1 \2', text)
         
         # Clean up any remaining malformed text
         text = text.strip()
         
         return text
     
+    def _is_quality_sentence(self, sentence):
+        """
+        Dynamically determines if a sentence is of good quality without hardcoded assumptions.
+        Uses linguistic and structural features that apply to any content type.
+        """
+        sentence = sentence.strip()
+        
+        # Basic length requirements
+        if len(sentence.split()) < 8 or len(sentence.split()) > 50:
+            return False
+        
+        # Must end with proper sentence termination
+        if not sentence.endswith(('.') and not sentence.endswith('!') and not sentence.endswith('?')):
+            return False
+        
+        # Skip all-uppercase sentences (likely headers)
+        if sentence.isupper():
+            return False
+        
+        # Skip very short sentences
+        if len(sentence) < 20:
+            return False
+        
+        # Skip sentences that are just fragments (e.g., "Title Name" or "Chapter 1")
+        if re.match(r'^[A-Z][a-z]*\s+[A-Z][a-z]*$', sentence):
+            return False
+        
+        # Skip sentences that are just numbers or symbols
+        if re.match(r'^[\d\s\-\.]+$', sentence):
+            return False
+        
+        # Skip sentences that are just repeated characters
+        if len(set(sentence)) < 5:
+            return False
+        
+        return True
+    
     def _identify_topic_sentences_dynamically(self, doc, sentences):
         """
-        Dynamically identifies topic sentences using NLP features without hardcoded keywords.
+        Dynamically identifies topic sentences using general linguistic features that work with any content.
         """
         topic_sentences = []
         
         for sent in doc.sents:
             sent_text = sent.text.strip()
             
-            # Use linguistic features to identify important sentences
+            # Use general linguistic features to identify important sentences
             importance_score = 0
             
-            # Check for definitional patterns (linguistic, not word-based)
-            if any(pattern in sent_text.lower() for pattern in ['is a', 'are', 'refers to', 'means', 'consists of', 'involves', 'enables', 'provides', 'helps', 'ensures']):
+            # Check for definitional patterns (general, not topic-specific)
+            if any(pattern in sent_text.lower() for pattern in ['is a', 'are', 'refers to', 'means', 'consists of', 'involves', 'enables', 'provides', 'helps', 'ensures', 'defines', 'describes', 'represents']):
                 importance_score += 3
             
             # Check for explanatory patterns
-            if any(pattern in sent_text.lower() for pattern in ['because', 'therefore', 'thus', 'hence', 'as a result', 'this means', 'in other words']):
+            if any(pattern in sent_text.lower() for pattern in ['because', 'therefore', 'thus', 'hence', 'as a result', 'this means', 'in other words', 'for example', 'specifically', 'in particular']):
                 importance_score += 2
             
             # Check for introductory patterns
-            if any(pattern in sent_text.lower() for pattern in ['first', 'initially', 'to begin', 'let\'s', 'we\'ll', 'this guide', 'in this']):
+            if any(pattern in sent_text.lower() for pattern in ['first', 'initially', 'to begin', 'let\'s', 'we\'ll', 'this', 'in this', 'overview', 'introduction']):
                 importance_score += 2
             
             # Check for conclusion patterns
-            if any(pattern in sent_text.lower() for pattern in ['conclusion', 'finally', 'in summary', 'to summarize', 'overall', 'ultimately']):
+            if any(pattern in sent_text.lower() for pattern in ['conclusion', 'finally', 'in summary', 'to summarize', 'overall', 'ultimately', 'in conclusion', 'to conclude']):
                 importance_score += 2
             
             # Check for technical/domain-specific language (dynamic detection)
@@ -150,10 +180,32 @@ class TextAnalyzer:
             if len(sent_doc.ents) > 0:
                 importance_score += 1
             
+            # Check for key terms (words that appear multiple times in the text)
+            key_terms = self._identify_key_terms_dynamically(sent_text, doc)
+            importance_score += len(key_terms) * 0.5
+            
             if importance_score >= 2 and len(sent_text.split()) >= 8:
                 topic_sentences.append(sent_text)
         
         return topic_sentences
+    
+    def _identify_key_terms_dynamically(self, sentence, full_doc):
+        """
+        Dynamically identifies key terms in a sentence by analyzing the full document context.
+        """
+        # Get all words from the full document
+        all_words = [token.lemma_.lower() for token in full_doc if token.is_alpha and not token.is_stop and len(token.text) > 3]
+        
+        # Count word frequencies
+        word_freq = Counter(all_words)
+        
+        # Get words from the current sentence
+        sentence_words = [token.lemma_.lower() for token in nlp(sentence) if token.is_alpha and not token.is_stop and len(token.text) > 3]
+        
+        # Return words that appear multiple times in the document
+        key_terms = [word for word in sentence_words if word_freq[word] > 2]
+        
+        return key_terms
     
     def _detect_technical_language(self, text):
         """
@@ -550,30 +602,30 @@ class TextAnalyzer:
     
     def _identify_learning_concepts_dynamically(self, doc, text):
         """
-        Dynamically identifies learning concepts using linguistic patterns.
+        Dynamically identifies learning concepts using general linguistic patterns that work with any content.
         """
         concept_sentences = []
         
         for sent in doc.sents:
             sent_text = sent.text.strip()
             
-            # Use linguistic patterns to identify concept explanations
+            # Use general linguistic patterns to identify concept explanations
             concept_indicators = 0
             
-            # Definition patterns
-            if any(pattern in sent_text.lower() for pattern in ['is a', 'are', 'refers to', 'means', 'consists of', 'involves', 'enables', 'provides', 'helps', 'ensures', 'achieves', 'improves', 'optimizes']):
+            # Definition patterns (general, not topic-specific)
+            if any(pattern in sent_text.lower() for pattern in ['is a', 'are', 'refers to', 'means', 'consists of', 'involves', 'enables', 'provides', 'helps', 'ensures', 'achieves', 'improves', 'optimizes', 'defines', 'describes', 'represents']):
                 concept_indicators += 2
             
             # Explanation patterns
-            if any(pattern in sent_text.lower() for pattern in ['because', 'therefore', 'thus', 'hence', 'as a result', 'this means', 'in other words', 'for example', 'such as']):
+            if any(pattern in sent_text.lower() for pattern in ['because', 'therefore', 'thus', 'hence', 'as a result', 'this means', 'in other words', 'for example', 'such as', 'specifically', 'in particular']):
                 concept_indicators += 2
             
             # Process patterns
-            if any(pattern in sent_text.lower() for pattern in ['first', 'then', 'next', 'finally', 'step', 'process', 'method', 'approach', 'strategy', 'technique']):
+            if any(pattern in sent_text.lower() for pattern in ['first', 'then', 'next', 'finally', 'step', 'process', 'method', 'approach', 'strategy', 'technique', 'procedure', 'workflow']):
                 concept_indicators += 2
             
-            # Technical patterns
-            if any(pattern in sent_text.lower() for pattern in ['implement', 'deploy', 'configure', 'set up', 'install', 'configure', 'optimize', 'scale']):
+            # Technical patterns (general, not specific to any domain)
+            if any(pattern in sent_text.lower() for pattern in ['implement', 'deploy', 'configure', 'set up', 'install', 'optimize', 'scale', 'develop', 'create', 'build', 'design']):
                 concept_indicators += 1
             
             # Check sentence quality
@@ -586,23 +638,23 @@ class TextAnalyzer:
     
     def _create_dynamic_structured_summary(self, text):
         """
-        Creates a structured summary that adapts to the content dynamically.
+        Creates a structured summary that adapts to any content type dynamically.
         """
         sentences = sent_tokenize(text)
         
         summary_parts = ["📚 **Comprehensive Learning Summary:**"]
         
-        # Find introduction/main topic
+        # Find introduction/main topic using general patterns
         intro_sentences = []
-        for sentence in sentences[:5]:
-            if any(indicator in sentence.lower() for indicator in ['guide', 'explore', 'learn', 'understand', 'overview', 'introduction']):
+        for sentence in sentences[:10]:  # Look in first 10 sentences
+            if any(indicator in sentence.lower() for indicator in ['guide', 'explore', 'learn', 'understand', 'overview', 'introduction', 'report', 'study', 'analysis', 'examine', 'investigate']):
                 intro_sentences.append(sentence.strip())
         
         if intro_sentences:
             summary_parts.append(f"\n🎯 **Main Topic:** {intro_sentences[0]}")
         
-        # Identify key sections dynamically
-        section_indicators = ['1.', '2.', '3.', '4.', '5.', '6.', 'A.', 'B.', 'C.', '✅', '🔹', '🚀']
+        # Identify key sections dynamically using general patterns
+        section_indicators = ['1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.', 'A.', 'B.', 'C.', 'D.', 'E.', 'F.', '✅', '🔹', '🚀', '📚', '🎯', '🔍', '💡', '📝', '📊', '😊', '🎭', '🏷️', '☁️']
         key_sections = []
         
         for i, sentence in enumerate(sentences):
@@ -610,7 +662,7 @@ class TextAnalyzer:
                 # Get the next sentence as context
                 if i + 1 < len(sentences):
                     context = sentences[i + 1].strip()
-                    if len(context.split()) >= 6:
+                    if len(context.split()) >= 6 and self._is_quality_sentence(context):
                         key_sections.append(context)
         
         if key_sections:
@@ -618,10 +670,10 @@ class TextAnalyzer:
             for i, section in enumerate(key_sections[:4], 1):
                 summary_parts.append(f"\n{i}. {section}")
         
-        # Find conclusion or key takeaway
+        # Find conclusion or key takeaway using general patterns
         conclusion_sentences = []
-        for sentence in sentences[-5:]:
-            if any(indicator in sentence.lower() for indicator in ['conclusion', 'finally', 'summary', 'overall', 'ultimately', 'achieve', 'ensure', 'build', 'create']):
+        for sentence in sentences[-10:]:  # Look in last 10 sentences
+            if any(indicator in sentence.lower() for indicator in ['conclusion', 'finally', 'summary', 'overall', 'ultimately', 'achieve', 'ensure', 'build', 'create', 'develop', 'establish', 'conclude', 'summarize']):
                 conclusion_sentences.append(sentence.strip())
         
         if conclusion_sentences:
