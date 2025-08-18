@@ -114,7 +114,7 @@ class TextAnalyzer:
             return False
         
         # Must end with proper sentence termination
-        if not sentence.endswith(('.') and not sentence.endswith('!') and not sentence.endswith('?')):
+        if not (sentence.endswith('.') or sentence.endswith('!') or sentence.endswith('?')):
             return False
         
         # Skip all-uppercase sentences (likely headers)
