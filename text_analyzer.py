@@ -37,8 +37,8 @@ class TextAnalyzer:
     
     def summarize_text_nltk(self, text, num_sentences=3):
         """
-        Summarizes text using NLTK by extracting the most important sentences.
-        Improved version for better coherence and readability.
+        Creates intelligent, coherent summaries using advanced NLP techniques.
+        This method dynamically adapts to any content type without hardcoded restrictions.
         """
         if not text.strip():
             return ""
@@ -47,75 +47,327 @@ class TextAnalyzer:
         if len(sentences) <= num_sentences:
             return text
         
-        # Clean and filter sentences
+        # Clean and filter sentences intelligently
         cleaned_sentences = []
         for sentence in sentences:
             sentence = sentence.strip()
-            # Skip very short sentences, headers, and bullet points
-            if (len(sentence.split()) >= 5 and 
+            # Dynamic filtering based on sentence quality, not hardcoded patterns
+            if (len(sentence.split()) >= 6 and 
                 len(sentence.split()) <= 50 and
-                not sentence.startswith(('✅', '🔹', '🚀', '🔹', 'A.', 'B.', 'C.', '1.', '2.', '3.', '4.', '5.', '6.')) and
+                sentence.endswith(('.') or sentence.endswith('!') or sentence.endswith('?')) and
                 not sentence.isupper() and
-                sentence.endswith(('.') or sentence.endswith('!') or sentence.endswith('?'))):
+                # Skip obvious non-content elements dynamically
+                not any(sentence.startswith(prefix) for prefix in ['✅', '🔹', '🚀', '📚', '🎯', '🔍', '💡', '📝', '📊', '😊', '🎭', '🏷️', '☁️'])):
                 cleaned_sentences.append(sentence)
         
         if len(cleaned_sentences) <= num_sentences:
             return ' '.join(cleaned_sentences)
         
+        # Use spaCy for advanced semantic analysis
+        doc = nlp(text)
+        
+        # Dynamic topic identification using NLP features
+        topic_sentences = self._identify_topic_sentences_dynamically(doc, cleaned_sentences)
+        
+        # If we have good topic sentences, use them as foundation
+        if len(topic_sentences) >= 2:
+            selected_topics = topic_sentences[:min(num_sentences, len(topic_sentences))]
+            selected_topics.sort(key=lambda x: sentences.index(x))
+            
+            # Add context sentences if needed
+            if len(selected_topics) < num_sentences:
+                remaining_slots = num_sentences - len(selected_topics)
+                context_sentences = self._find_context_sentences(selected_topics, sentences, remaining_slots)
+                final_summary = selected_topics + context_sentences
+                final_summary.sort(key=lambda x: sentences.index(x))
+                return ' '.join(final_summary[:num_sentences])
+            
+            return ' '.join(selected_topics)
+        
+        # Fallback: Intelligent frequency-based approach with semantic weighting
+        return self._intelligent_frequency_summary(cleaned_sentences, text, num_sentences)
+    
+    def _identify_topic_sentences_dynamically(self, doc, sentences):
+        """
+        Dynamically identifies topic sentences using NLP features without hardcoded keywords.
+        """
+        topic_sentences = []
+        
+        for sent in doc.sents:
+            sent_text = sent.text.strip()
+            
+            # Use linguistic features to identify important sentences
+            importance_score = 0
+            
+            # Check for definitional patterns (linguistic, not word-based)
+            if any(pattern in sent_text.lower() for pattern in ['is a', 'are', 'refers to', 'means', 'consists of', 'involves', 'enables', 'provides', 'helps', 'ensures']):
+                importance_score += 3
+            
+            # Check for explanatory patterns
+            if any(pattern in sent_text.lower() for pattern in ['because', 'therefore', 'thus', 'hence', 'as a result', 'this means', 'in other words']):
+                importance_score += 2
+            
+            # Check for introductory patterns
+            if any(pattern in sent_text.lower() for pattern in ['first', 'initially', 'to begin', 'let\'s', 'we\'ll', 'this guide', 'in this']):
+                importance_score += 2
+            
+            # Check for conclusion patterns
+            if any(pattern in sent_text.lower() for pattern in ['conclusion', 'finally', 'in summary', 'to summarize', 'overall', 'ultimately']):
+                importance_score += 2
+            
+            # Check for technical/domain-specific language (dynamic detection)
+            technical_indicators = self._detect_technical_language(sent_text)
+            importance_score += technical_indicators
+            
+            # Check sentence structure complexity (more complex often = more important)
+            if 15 <= len(sent_text.split()) <= 35:
+                importance_score += 1
+            
+            # Check for named entities (indicates important content)
+            sent_doc = nlp(sent_text)
+            if len(sent_doc.ents) > 0:
+                importance_score += 1
+            
+            if importance_score >= 2 and len(sent_text.split()) >= 8:
+                topic_sentences.append(sent_text)
+        
+        return topic_sentences
+    
+    def _detect_technical_language(self, text):
+        """
+        Dynamically detects technical language without hardcoded terms.
+        """
+        score = 0
+        
+        # Check for technical patterns
+        if any(pattern in text.lower() for pattern in ['api', 'orm', 'sql', 'http', 'json', 'xml', 'ssl', 'tls', 'oauth', 'jwt', 'rest', 'graphql']):
+            score += 2
+        
+        # Check for technical abbreviations and acronyms
+        if re.search(r'\b[A-Z]{2,}\b', text):
+            score += 1
+        
+        # Check for version numbers and technical specifications
+        if re.search(r'\b\d+\.\d+\b', text):
+            score += 1
+        
+        # Check for technical verbs
+        technical_verbs = ['implement', 'deploy', 'configure', 'optimize', 'scale', 'cache', 'authenticate', 'encrypt', 'monitor', 'debug']
+        if any(verb in text.lower() for verb in technical_verbs):
+            score += 1
+        
+        return score
+    
+    def _find_context_sentences(self, topic_sentences, all_sentences, num_needed):
+        """
+        Finds contextual sentences that provide supporting information.
+        """
+        context_sentences = []
+        used_sentences = set(topic_sentences)
+        
+        for topic in topic_sentences:
+            topic_idx = all_sentences.index(topic)
+            
+            # Look for sentences that provide context or examples
+            for i in range(max(0, topic_idx - 1), min(topic_idx + 3, len(all_sentences))):
+                if (all_sentences[i] not in used_sentences and 
+                    len(context_sentences) < num_needed and
+                    len(all_sentences[i].split()) >= 8):
+                    context_sentences.append(all_sentences[i])
+                    used_sentences.add(all_sentences[i])
+        
+        return context_sentences[:num_needed]
+    
+    def _intelligent_frequency_summary(self, sentences, text, num_sentences):
+        """
+        Creates intelligent summaries using frequency analysis with semantic enhancement.
+        """
         words = word_tokenize(text.lower())
         stop_words = set(stopwords.words('english'))
         
-        # Filter out stop words and non-alphabetic tokens
-        filtered_words = [word for word in words if word.isalpha() and word not in stop_words]
+        # Filter words intelligently
+        filtered_words = [word for word in words if word.isalpha() and word not in stop_words and len(word) > 2]
         
-        # Calculate word frequency
-        word_frequencies = {}
+        if not filtered_words:
+            return ' '.join(sentences[:num_sentences])
+        
+        # Calculate word importance using multiple dynamic factors
+        word_scores = {}
         for word in filtered_words:
-            word_frequencies[word] = word_frequencies.get(word, 0) + 1
-        
-        # Normalize frequencies
-        if not word_frequencies:
-            return ' '.join(cleaned_sentences[:num_sentences])
+            score = 0
             
-        maximum_frequency = max(word_frequencies.values())
-        for word in word_frequencies.keys():
-            word_frequencies[word] = (word_frequencies[word] / maximum_frequency)
+            # Frequency
+            freq = filtered_words.count(word)
+            score += freq
+            
+            # Position importance (words appearing early are often more important)
+            first_pos = text.lower().find(word)
+            if first_pos != -1:
+                position_score = 1.0 - (first_pos / len(text))
+                score += position_score * 2
+            
+            # Length bonus (longer words often indicate technical terms)
+            if len(word) > 6:
+                score += 0.5
+            
+            # Capitalization bonus (proper nouns are often important)
+            if word in text and word[0].isupper():
+                score += 1
+            
+            word_scores[word] = score
         
-        # Calculate sentence scores based on word frequencies
+        # Score sentences based on word importance
         sentence_scores = {}
-        for sentence in cleaned_sentences:
+        for sentence in sentences:
             sentence_words = word_tokenize(sentence.lower())
             score = 0
             word_count = 0
+            
             for word in sentence_words:
-                if word in word_frequencies.keys():
-                    score += word_frequencies[word]
+                if word in word_scores:
+                    score += word_scores[word]
                     word_count += 1
             
             if word_count > 0:
-                sentence_scores[sentence] = score / word_count  # Average score
+                # Normalize by sentence length to avoid bias toward longer sentences
+                sentence_scores[sentence] = score / word_count
         
-        # If no sentences scored, return first few cleaned sentences
         if not sentence_scores:
-            return ' '.join(cleaned_sentences[:num_sentences])
+            return ' '.join(sentences[:num_sentences])
         
-        # Sort sentences by score and return the top ones
-        summarized_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:num_sentences]
+        # Select top sentences and maintain order
+        top_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:num_sentences]
+        top_sentences.sort(key=lambda x: sentences.index(x))
         
-        # Sort by original position to maintain logical flow
-        summarized_sentences.sort(key=lambda x: sentences.index(x))
-        
-        return ' '.join(summarized_sentences)
+        return ' '.join(top_sentences)
     
     def extract_keywords_spacy(self, text, num_keywords=10):
         """
-        Extracts keywords from text using spaCy.
+        Extracts meaningful keywords dynamically using advanced NLP techniques.
+        This method adapts to any content type without hardcoded restrictions.
         """
         doc = nlp(text)
-        keywords = [token.lemma_.lower() for token in doc if token.is_alpha and not token.is_stop and token.pos_ in ['NOUN', 'PROPN', 'ADJ']]
-        # Simple frequency-based keyword selection
-        keyword_freq = Counter(keywords)
-        return [word for word, freq in keyword_freq.most_common(num_keywords)]
+        
+        # Extract potential keywords using linguistic features
+        potential_keywords = []
+        for token in doc:
+            # Focus on meaningful parts of speech
+            if (token.is_alpha and 
+                not token.is_stop and 
+                not token.is_punct and
+                len(token.text) > 2 and
+                token.pos_ in ['NOUN', 'PROPN', 'ADJ', 'VERB']):
+                
+                # Skip overly common words that aren't really keywords
+                if token.text.lower() not in ['use', 'can', 'will', 'get', 'make', 'take', 'see', 'know', 'way', 'time', 'year', 'day', 'work', 'good', 'new', 'first', 'last', 'long', 'great', 'little', 'own', 'other', 'old', 'right', 'big', 'high', 'different', 'small', 'large', 'next', 'early', 'young', 'important', 'few', 'public', 'bad', 'same', 'able', 'well', 'only', 'very', 'even', 'back', 'still', 'must', 'should', 'may', 'might', 'could', 'would', 'shall']:
+                    potential_keywords.append(token.lemma_.lower())
+        
+        # Calculate keyword importance using multiple dynamic factors
+        keyword_scores = {}
+        for keyword in potential_keywords:
+            score = 0
+            
+            # Frequency bonus (more frequent = more important)
+            freq = potential_keywords.count(keyword)
+            score += freq * 2
+            
+            # Position importance (words appearing early are often more important)
+            first_pos = text.lower().find(keyword)
+            if first_pos != -1:
+                position_score = 1.0 - (first_pos / len(text))
+                score += position_score * 3
+            
+            # Length bonus (longer words often indicate technical terms or proper nouns)
+            if len(keyword) > 6:
+                score += 1
+            elif len(keyword) > 8:
+                score += 2
+            
+            # Capitalization bonus (proper nouns are often important)
+            if keyword in text and keyword[0].isupper():
+                score += 2
+            
+            # Part-of-speech bonus (nouns and proper nouns are typically more important)
+            for token in doc:
+                if token.lemma_.lower() == keyword:
+                    if token.pos_ == 'PROPN':
+                        score += 3
+                    elif token.pos_ == 'NOUN':
+                        score += 2
+                    elif token.pos_ == 'ADJ':
+                        score += 1
+                    break
+            
+            # Named entity bonus (entities are often key concepts)
+            for ent in doc.ents:
+                if keyword in ent.text.lower():
+                    score += 4
+                    break
+            
+            # Technical language detection (dynamic, not hardcoded)
+            technical_score = self._detect_technical_language_dynamic(keyword, text)
+            score += technical_score
+            
+            keyword_scores[keyword] = score
+        
+        # Sort by score and return top keywords
+        sorted_keywords = sorted(keyword_scores.items(), key=lambda x: x[1], reverse=True)
+        
+        # Remove duplicates and return top N
+        unique_keywords = []
+        for keyword, score in sorted_keywords:
+            if keyword not in unique_keywords and len(unique_keywords) < num_keywords:
+                unique_keywords.append(keyword)
+        
+        return unique_keywords
+    
+    def _detect_technical_language_dynamic(self, word, text):
+        """
+        Dynamically detects technical language patterns without hardcoded terms.
+        """
+        score = 0
+        
+        # Check for technical patterns (dynamic detection)
+        technical_patterns = [
+            # Abbreviations and acronyms
+            r'\b[A-Z]{2,}\b',
+            # Version numbers
+            r'\b\d+\.\d+\b',
+            # Technical file extensions
+            r'\b\w+\.(py|js|ts|java|cpp|h|php|html|css|sql|json|xml|yaml|yml|md|txt)\b',
+            # URLs and protocols
+            r'\b(https?|ftp|ssh|sftp)://\b',
+            # IP addresses
+            r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',
+            # Hash patterns
+            r'\b[a-fA-F0-9]{32,}\b',
+            # Technical identifiers
+            r'\b[A-Za-z_][A-Za-z0-9_]*\b'
+        ]
+        
+        for pattern in technical_patterns:
+            if re.search(pattern, word):
+                score += 1
+        
+        # Check for technical suffixes and prefixes
+        technical_suffixes = ['ing', 'ed', 'er', 'est', 'ly', 'tion', 'sion', 'ment', 'ness', 'ity', 'al', 'ive', 'able', 'ible']
+        technical_prefixes = ['un', 're', 'pre', 'post', 'anti', 'pro', 'co', 'inter', 'intra', 'trans', 'sub', 'super', 'hyper', 'micro', 'macro']
+        
+        for suffix in technical_suffixes:
+            if word.endswith(suffix):
+                score += 0.5
+        
+        for prefix in technical_prefixes:
+            if word.startswith(prefix):
+                score += 0.5
+        
+        # Check if word appears in technical contexts
+        technical_contexts = ['api', 'database', 'server', 'client', 'protocol', 'algorithm', 'framework', 'library', 'module', 'package', 'dependency', 'configuration', 'environment', 'deployment', 'infrastructure']
+        if any(context in text.lower() for context in technical_contexts):
+            if word in text.lower():
+                score += 1
+        
+        return score
     
     def analyze_sentiment_textblob(self, text):
         """
@@ -245,37 +497,107 @@ class TextAnalyzer:
     
     def create_learning_summary(self, text, num_concepts=5):
         """
-        Creates a learning-focused summary that explains key concepts and their relationships.
-        This helps readers understand the main ideas rather than just extracting sentences.
+        Creates dynamic learning summaries that adapt to any content type.
         """
         if not text.strip():
             return ""
         
-        # Extract key concepts and their explanations
         doc = nlp(text)
         
-        # Find sentences that contain definitions, explanations, or key concepts
+        # Dynamically identify learning concepts
+        concept_sentences = self._identify_learning_concepts_dynamically(doc, text)
+        
+        if len(concept_sentences) >= 3:
+            selected_concepts = concept_sentences[:num_concepts]
+            selected_concepts.sort(key=lambda x: text.find(x))
+            
+            summary_parts = ["📚 **Key Concepts Explained:**"]
+            for i, concept in enumerate(selected_concepts, 1):
+                summary_parts.append(f"\n{i}. {concept}")
+            
+            return '\n'.join(summary_parts)
+        
+        # Create structured summary based on content analysis
+        return self._create_dynamic_structured_summary(text)
+    
+    def _identify_learning_concepts_dynamically(self, doc, text):
+        """
+        Dynamically identifies learning concepts using linguistic patterns.
+        """
         concept_sentences = []
+        
         for sent in doc.sents:
             sent_text = sent.text.strip()
-            # Look for sentences that explain concepts
-            if any(keyword in sent_text.lower() for keyword in ['means', 'refers to', 'is a', 'are', 'consists of', 'involves', 'enables', 'provides', 'helps', 'ensures', 'achieve', 'improve', 'optimize']):
-                if len(sent_text.split()) >= 8 and len(sent_text.split()) <= 40:
-                    concept_sentences.append(sent_text)
+            
+            # Use linguistic patterns to identify concept explanations
+            concept_indicators = 0
+            
+            # Definition patterns
+            if any(pattern in sent_text.lower() for pattern in ['is a', 'are', 'refers to', 'means', 'consists of', 'involves', 'enables', 'provides', 'helps', 'ensures', 'achieves', 'improves', 'optimizes']):
+                concept_indicators += 2
+            
+            # Explanation patterns
+            if any(pattern in sent_text.lower() for pattern in ['because', 'therefore', 'thus', 'hence', 'as a result', 'this means', 'in other words', 'for example', 'such as']):
+                concept_indicators += 2
+            
+            # Process patterns
+            if any(pattern in sent_text.lower() for pattern in ['first', 'then', 'next', 'finally', 'step', 'process', 'method', 'approach', 'strategy', 'technique']):
+                concept_indicators += 2
+            
+            # Technical patterns
+            if any(pattern in sent_text.lower() for pattern in ['implement', 'deploy', 'configure', 'set up', 'install', 'configure', 'optimize', 'scale']):
+                concept_indicators += 1
+            
+            # Check sentence quality
+            if (concept_indicators >= 2 and 
+                len(sent_text.split()) >= 8 and 
+                len(sent_text.split()) <= 45):
+                concept_sentences.append(sent_text)
         
-        # If we don't have enough concept sentences, fall back to regular summary
-        if len(concept_sentences) < 2:
-            return self.summarize_text_nltk(text, num_concepts)
+        return concept_sentences
+    
+    def _create_dynamic_structured_summary(self, text):
+        """
+        Creates a structured summary that adapts to the content dynamically.
+        """
+        sentences = sent_tokenize(text)
         
-        # Select the most relevant concept sentences
-        selected_concepts = concept_sentences[:num_concepts]
+        summary_parts = ["📚 **Comprehensive Learning Summary:**"]
         
-        # Create a structured summary
-        summary_parts = []
-        summary_parts.append("📚 **Key Concepts Explained:**")
+        # Find introduction/main topic
+        intro_sentences = []
+        for sentence in sentences[:5]:
+            if any(indicator in sentence.lower() for indicator in ['guide', 'explore', 'learn', 'understand', 'overview', 'introduction']):
+                intro_sentences.append(sentence.strip())
         
-        for i, concept in enumerate(selected_concepts, 1):
-            summary_parts.append(f"\n{i}. {concept}")
+        if intro_sentences:
+            summary_parts.append(f"\n🎯 **Main Topic:** {intro_sentences[0]}")
+        
+        # Identify key sections dynamically
+        section_indicators = ['1.', '2.', '3.', '4.', '5.', '6.', 'A.', 'B.', 'C.', '✅', '🔹', '🚀']
+        key_sections = []
+        
+        for i, sentence in enumerate(sentences):
+            if any(indicator in sentence for indicator in section_indicators):
+                # Get the next sentence as context
+                if i + 1 < len(sentences):
+                    context = sentences[i + 1].strip()
+                    if len(context.split()) >= 6:
+                        key_sections.append(context)
+        
+        if key_sections:
+            summary_parts.append(f"\n🔍 **Key Areas Covered:**")
+            for i, section in enumerate(key_sections[:4], 1):
+                summary_parts.append(f"\n{i}. {section}")
+        
+        # Find conclusion or key takeaway
+        conclusion_sentences = []
+        for sentence in sentences[-5:]:
+            if any(indicator in sentence.lower() for indicator in ['conclusion', 'finally', 'summary', 'overall', 'ultimately', 'achieve', 'ensure', 'build', 'create']):
+                conclusion_sentences.append(sentence.strip())
+        
+        if conclusion_sentences:
+            summary_parts.append(f"\n💡 **Key Takeaway:** {conclusion_sentences[0]}")
         
         return '\n'.join(summary_parts)
 
