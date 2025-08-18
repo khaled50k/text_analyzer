@@ -65,17 +65,18 @@ class TextAnalyzer:
         # Dynamic topic identification using NLP features
         topic_sentences = self._identify_topic_sentences_dynamically(doc, cleaned_sentences)
         
-        # If we have good topic sentences, use them as foundation
         if len(topic_sentences) >= 2:
             selected_topics = topic_sentences[:min(num_sentences, len(topic_sentences))]
-            selected_topics.sort(key=lambda x: sentences.index(x))
             
-            # Add context sentences if needed
+            # Sort by original position to maintain logical flow (robust)
+            selected_topics.sort(key=lambda x: self._get_sentence_position(text, x, sentences))
+            
             if len(selected_topics) < num_sentences:
                 remaining_slots = num_sentences - len(selected_topics)
                 context_sentences = self._find_context_sentences(selected_topics, sentences, remaining_slots)
                 final_summary = selected_topics + context_sentences
-                final_summary.sort(key=lambda x: sentences.index(x))
+                # Robust sort by position
+                final_summary.sort(key=lambda x: self._get_sentence_position(text, x, sentences))
                 return ' '.join(final_summary[:num_sentences])
             
             return ' '.join(selected_topics)
@@ -240,9 +241,10 @@ class TextAnalyzer:
         used_sentences = set(topic_sentences)
         
         for topic in topic_sentences:
-            topic_idx = all_sentences.index(topic)
+            topic_idx = self._safe_sentence_index(topic, all_sentences, ' '.join(all_sentences))
+            if topic_idx == -1:
+                continue
             
-            # Look for sentences that provide context or examples
             for i in range(max(0, topic_idx - 1), min(topic_idx + 3, len(all_sentences))):
                 if (all_sentences[i] not in used_sentences and 
                     len(context_sentences) < num_needed and
@@ -311,7 +313,8 @@ class TextAnalyzer:
         
         # Select top sentences and maintain order
         top_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:num_sentences]
-        top_sentences.sort(key=lambda x: sentences.index(x))
+        # Robust order by position in original text
+        top_sentences.sort(key=lambda x: self._get_sentence_position(text, x, sentences))
         
         return ' '.join(top_sentences)
     
@@ -704,4 +707,42 @@ class TextAnalyzer:
             "statistics": self.get_text_statistics(text),
             "readability": self.analyze_readability(text)
         }
+
+    def _get_sentence_position(self, full_text, sentence, sentences_list):
+        """
+        Returns a stable position for a sentence using multiple fallbacks:
+        1) Exact match in sentences_list
+        2) First occurrence position in full_text
+        3) Fallback to a large number to push to the end
+        """
+        try:
+            return sentences_list.index(sentence)
+        except ValueError:
+            pos = full_text.find(sentence)
+            return pos if pos >= 0 else 10**9
+    
+    def _safe_sentence_index(self, sentence, sentences_list, full_text):
+        """
+        Safely returns the index of a sentence within sentences_list, with fallbacks to substring search.
+        Returns -1 if no reasonable position can be determined.
+        """
+        try:
+            return sentences_list.index(sentence)
+        except ValueError:
+            pos = full_text.find(sentence)
+            if pos < 0:
+                return -1
+            # Find closest sentence by comparing substring positions
+            best_idx = -1
+            best_delta = None
+            running_pos = 0
+            for idx, s in enumerate(sentences_list):
+                cur = full_text.find(s, running_pos)
+                if cur >= 0:
+                    delta = abs(cur - pos)
+                    if best_delta is None or delta < best_delta:
+                        best_delta = delta
+                        best_idx = idx
+                    running_pos = cur + len(s)
+            return best_idx
 
