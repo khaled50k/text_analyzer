@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>📁 Upload Text File</h2>
+    <p>Upload a .txt file to analyze its content with AI-powered insights.</p>
+    
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Choose Text File:</label>
+            <input type="file" id="file" name="file" accept=".txt" required>
+        </div>
+        <button type="submit" class="btn">Analyze File</button>
+    </form>
+</div>
+
+<div class="divider">
+    <span>OR</span>
+</div>
+
+<div class="card">
+    <h2>✍️ Enter Text Directly</h2>
+    <p>Paste or type your text directly for immediate analysis.</p>
+    
+    <form action="/analyze_text" method="post">
+        <div class="form-group">
+            <label for="text">Your Text:</label>
+            <textarea id="text" name="text" placeholder="Enter your text here..." required></textarea>
+        </div>
+        <button type="submit" class="btn">Analyze Text</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>🚀 Features</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3>📝 Smart Summarization</h3>
+            <p>Extract key sentences using advanced NLP algorithms</p>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3>🎯 Keyword Extraction</h3>
+            <p>Identify the most important terms and concepts</p>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3>😊 Sentiment Analysis</h3>
+            <p>Analyze emotional tone using multiple AI models</p>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3>🏷️ Entity Recognition</h3>
+            <p>Detect people, places, organizations, and more</p>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3>📊 Text Statistics</h3>
+            <p>Comprehensive metrics about your text</p>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3>📖 Readability Analysis</h3>
+            <p>Assess how easy your text is to read</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

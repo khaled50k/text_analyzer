@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results - AI Text Analyzer{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 20px;">
+    <a href="/" class="btn">← Analyze Another Text</a>
+</div>
+
+<div class="card">
+    <h2>📄 File: {{ filename }}</h2>
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <h3>Original Text:</h3>
+        <p style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: white; border-radius: 4px;">{{ original_text }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📝 Summary</h2>
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196f3;">
+        <p>{{ analysis.summary }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🎯 Keywords</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+        {% for keyword in analysis.keywords %}
+            <span style="background: #667eea; color: white; padding: 5px 12px; border-radius: 20px; font-size: 14px;">{{ keyword }}</span>
+        {% endfor %}
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+    <div class="card">
+        <h2>😊 Sentiment Analysis (TextBlob)</h2>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+            <p><strong>Sentiment:</strong> 
+                <span style="color: {% if analysis.sentiment_textblob.sentiment == 'Positive' %}green{% elif analysis.sentiment_textblob.sentiment == 'Negative' %}red{% else %}orange{% endif %};">
+                    {{ analysis.sentiment_textblob.sentiment }}
+                </span>
+            </p>
+            <p><strong>Polarity:</strong> {{ "%.3f"|format(analysis.sentiment_textblob.polarity) }}</p>
+            <p><strong>Subjectivity:</strong> {{ "%.3f"|format(analysis.sentiment_textblob.subjectivity) }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🎭 Sentiment Analysis (VADER)</h2>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+            <p><strong>Sentiment:</strong> 
+                <span style="color: {% if analysis.sentiment_vader.sentiment == 'Positive' %}green{% elif analysis.sentiment_vader.sentiment == 'Negative' %}red{% else %}orange{% endif %};">
+                    {{ analysis.sentiment_vader.sentiment }}
+                </span>
+            </p>
+            <p><strong>Compound:</strong> {{ "%.3f"|format(analysis.sentiment_vader.compound) }}</p>
+            <p><strong>Positive:</strong> {{ "%.3f"|format(analysis.sentiment_vader.positive) }}</p>
+            <p><strong>Neutral:</strong> {{ "%.3f"|format(analysis.sentiment_vader.neutral) }}</p>
+            <p><strong>Negative:</strong> {{ "%.3f"|format(analysis.sentiment_vader.negative) }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🏷️ Named Entities</h2>
+    {% if analysis.entities %}
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+            {% for entity, label in analysis.entities %}
+                <span style="background: #4caf50; color: white; padding: 5px 12px; border-radius: 15px; font-size: 14px;">
+                    {{ entity }} <small>({{ label }})</small>
+                </span>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: #666; font-style: italic;">No named entities detected.</p>
+    {% endif %}
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+    <div class="card">
+        <h2>📊 Text Statistics</h2>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+            <p><strong>Sentences:</strong> {{ analysis.statistics.sentences }}</p>
+            <p><strong>Words:</strong> {{ analysis.statistics.words }}</p>
+            <p><strong>Characters:</strong> {{ analysis.statistics.characters }}</p>
+            <p><strong>Characters (no spaces):</strong> {{ analysis.statistics.characters_no_spaces }}</p>
+            <p><strong>Avg words per sentence:</strong> {{ "%.1f"|format(analysis.statistics.avg_words_per_sentence) }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📖 Readability Analysis</h2>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+            <p><strong>Flesch Reading Ease:</strong> {{ "%.1f"|format(analysis.readability.flesch_reading_ease) }}</p>
+            <p><strong>Readability Level:</strong> 
+                <span style="color: {% if analysis.readability.readability_level in ['Very Easy', 'Easy'] %}green{% elif analysis.readability.readability_level in ['Fairly Easy', 'Standard'] %}orange{% else %}red{% endif %};">
+                    {{ analysis.readability.readability_level }}
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a href="/" class="btn">← Analyze Another Text</a>
+</div>
+{% endblock %}
+
