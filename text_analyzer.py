@@ -298,7 +298,7 @@ class TextAnalyzer:
             "keywords": self.extract_keywords_spacy(text),
             "sentiment_textblob": self.analyze_sentiment_textblob(text),
             "sentiment_vader": self.analyze_sentiment_vader(text),
-            # "entities": self.extract_entities(text),
+            "entities": self.extract_entities(text),
             "statistics": self.get_text_statistics(text),
             "readability": self.analyze_readability(text)
         }

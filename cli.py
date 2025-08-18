@@ -61,9 +61,9 @@ def main():
             results['sentiment_textblob'] = analyzer.analyze_sentiment_textblob(text)
             results['sentiment_vader'] = analyzer.analyze_sentiment_vader(text)
         
-        if not args.no_entities:
-            print("🏷️ Extracting entities...")
-            results['entities'] = analyzer.extract_entities(text)
+        # if not args.no_entities:
+        #     print("🏷️ Extracting entities...")
+        #     results['entities'] = analyzer.extract_entities(text)
         
         if not args.no_stats:
             print("📊 Calculating statistics...")
