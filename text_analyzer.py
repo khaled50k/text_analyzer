@@ -42,6 +42,9 @@ class TextAnalyzer:
         """
         if not text.strip():
             return ""
+        
+        # Preprocess text to handle newlines and formatting issues
+        text = self._preprocess_text(text)
             
         sentences = sent_tokenize(text)
         if len(sentences) <= num_sentences:
@@ -86,6 +89,25 @@ class TextAnalyzer:
         
         # Fallback: Intelligent frequency-based approach with semantic weighting
         return self._intelligent_frequency_summary(cleaned_sentences, text, num_sentences)
+    
+    def _preprocess_text(self, text):
+        """
+        Preprocesses text to handle formatting issues, newlines, and malformed content.
+        """
+        # Replace multiple newlines with single spaces
+        text = re.sub(r'\n+', ' ', text)
+        
+        # Replace multiple spaces with single spaces
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Fix common formatting issues
+        text = re.sub(r'([.!?])\s*([A-Z])', r'\1 \2', text)  # Fix spacing after punctuation
+        text = re.sub(r'([a-z])\s*([A-Z])', r'\1. \2', text)  # Add periods between sentence fragments
+        
+        # Clean up any remaining malformed text
+        text = text.strip()
+        
+        return text
     
     def _identify_topic_sentences_dynamically(self, doc, sentences):
         """
@@ -246,6 +268,9 @@ class TextAnalyzer:
         Extracts meaningful keywords dynamically using advanced NLP techniques.
         This method adapts to any content type without hardcoded restrictions.
         """
+        # Preprocess text to handle formatting issues
+        text = self._preprocess_text(text)
+        
         doc = nlp(text)
         
         # Extract potential keywords using linguistic features
@@ -501,6 +526,9 @@ class TextAnalyzer:
         """
         if not text.strip():
             return ""
+        
+        # Preprocess text to handle formatting issues
+        text = self._preprocess_text(text)
         
         doc = nlp(text)
         
