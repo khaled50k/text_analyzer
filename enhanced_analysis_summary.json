@@ -1,0 +1,59 @@
+{
+  "url": "https://mostaql.com/projects?category=development",
+  "title": "المشاريع المفتوحة | مستقل",
+  "main_topics": [
+    "مشروع",
+    "مماثل",
+    "تطبيق",
+    "node",
+    "لتطبيق"
+  ],
+  "content_categories": [
+    "project_listing"
+  ],
+  "overall_sentiment": "neutral",
+  "total_content_blocks": 33,
+  "interactive_elements_count": 587,
+  "semantic_diversity": 3,
+  "content_quality": {
+    "has_interactive_elements": true,
+    "content_depth": 35914,
+    "semantic_richness": 3,
+    "entity_richness": 1224,
+    "structured_content": 33
+  },
+  "top_content_blocks": [
+    {
+      "role": "project_card",
+      "text_preview": "عمل داش بورد إكسيل Mashaael M. منذ\n        4 دقائق 3 عروض مشروع مماثل أضف إلى المفضلة تبليغ عن محتوى",
+      "importance_score": 1.0,
+      "interactive_elements": 4
+    },
+    {
+      "role": "project_card",
+      "text_preview": "مستقل محترف للعمل على تطوير شامل وإدارة متجر إلكتروني Artist Artist A. منذ\n        16 دقيقة عرض واحد...",
+      "importance_score": 1.0,
+      "interactive_elements": 4
+    },
+    {
+      "role": "project_card",
+      "text_preview": "تصميم وتطوير لعبة Aras XO (إكس أو)  ونشرها على متجر Google Play Aras A. منذ\n        54 دقيقة عرضان م...",
+      "importance_score": 1.0,
+      "interactive_elements": 4
+    },
+    {
+      "role": "project_card",
+      "text_preview": "مبرمج محترف لتطبيق هاتف Simsim ا. منذ\n        ساعة 16 عرض مشروع مماثل أضف إلى المفضلة تبليغ عن محتوى",
+      "importance_score": 1.0,
+      "interactive_elements": 4
+    },
+    {
+      "role": "project_card",
+      "text_preview": "أتمتة ب n8n وربطه بالتليجرام محمد م. منذ\n        ساعة 7 عروض مشروع مماثل أضف إلى المفضلة تبليغ عن مح...",
+      "importance_score": 1.0,
+      "interactive_elements": 4
+    }
+  ],
+  "processing_time_ms": 3087,
+  "timestamp": "2025-08-19 12:24:31"
+}
